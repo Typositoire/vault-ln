@@ -21,6 +21,13 @@ if not string.find(path, "/v1/secret") then
     ssl_verify = true
   })
 
+  if err ~= nil then
+    ngx.status = 503
+    ngx.say(err)
+    ngx.flush(true)
+    return
+  end
+
   ngx.status = res.status
 
   for h, v in pairs(res.headers) do
@@ -44,6 +51,13 @@ local res, err = httpc:request_uri(vaultURL .. "/v1/secret/data/" .. symlinksPat
   headers = headers,
   ssl_verify = true
 })
+
+if err ~= nil then
+  ngx.status = 503
+  ngx.say(err)
+  ngx.flush(true)
+  return
+end
 
 if res.status == 404 then
   ngx.status = res.status
