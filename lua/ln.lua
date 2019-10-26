@@ -9,6 +9,27 @@ local path = ngx.var.request_uri
 local realPath = path
 local httpc = http.new()
 
+headers = ngx.req.get_headers()
+body = ngx.req.get_body_data()
+
+if not string.find(path, "/v1/secret") then
+  ngx.log(ngx.INFO, "Not a secret, passing to " .. vaultURL .. path .. " as is.")
+  local res, err = httpc:request_uri(vaultURL .. path, {
+    method = ngx.req.get_method(),
+    body = body,
+    headers = headers,
+    ssl_verify = true
+  })
+
+  ngx.status = res.status
+
+  for h, v in pairs(res.headers) do
+    ngx.header[h] = v
+  end
+
+  return ngx.print(res.body)
+end
+
 if baseURI ~= nil and baseURI ~= "" then
   realPath = path:gsub(baseURI, "")
 end
@@ -17,10 +38,6 @@ if symlinksPath == nil or symlinksPath == "" then
   symlinksPath = "symlinks"
 end
 
-headers = ngx.req.get_headers()
-body = ngx.req.get_body_data()
-
-ngx.log(0, vaultURL .. "/v1/secret/data/" .. symlinksPath)
 local res, err = httpc:request_uri(vaultURL .. "/v1/secret/data/" .. symlinksPath, {
   method = ngx.req.get_method(),
   body = body,
@@ -50,9 +67,8 @@ else
   newPath = "/v1/secret/data/" .. newPath
 end
 
-ngx.log(0,"DEBUG: " .. newPath)
 
-ngx.log(0, vaultURL .. newPath)
+ngx.log(ngx.INFO, "Found symlink for " .. path .. " at " .. newPath)
 local res, err = httpc:request_uri(vaultURL .. newPath, {
   method = ngx.req.get_method(),
   body = body,
