@@ -1,0 +1,19 @@
+# https://taskfile.dev
+
+version: '2'
+
+vars:
+  GIT_COMMIT: {sh: git log -n 1 --format=%h}
+  VAULTADDR: "http://192.168.2.58:8200"
+
+tasks:
+  start-vault:
+    cmds:
+      - docker run --name vault-server --cap-add=IPC_LOCK -e 'VAULT_DEV_ROOT_TOKEN_ID=myroot' -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' -d --rm -p 8200:8200 vault || true
+  build-vault-ln:
+    cmds:
+      - docker build . -t typositoire/vault-ln:{{.GIT_COMMIT}}
+  start-vault-ln:
+    deps: [build-vault-ln]
+    cmds:
+      -  docker run -it -d --rm --name vault-ln -v "$(pwd)/conf.d:/etc/nginx/conf.d" -v "$(pwd)/lua:/etc/nginx/lua" -e VAULT_ADDR="{{.VAULTADDR}}" -p 8080:80 typositoire/vault-ln:{{.GIT_COMMIT}}
