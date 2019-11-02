@@ -57,7 +57,7 @@ function _M.go()
   local body = get_body_data()
   local headers = get_headers()
 
-  if not (method == "GET") then
+  if method ~= "GET" then
     log(INFO, "Not a GET request, passing to " .. vaultURL .. path .. " as is.")
     res, err = proxy_vault(path, body, headers, method)
     ngx.status = res.status
